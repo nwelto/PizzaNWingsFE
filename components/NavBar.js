@@ -1,37 +1,86 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Navbar, //
-  Container,
-  Nav,
-  Button,
-} from 'react-bootstrap';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Avatar from '@mui/material/Avatar';
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import { ListItemText } from '@mui/material';
+import Divider from '@mui/material/Divider';
+import ButtonBase from '@mui/material/ButtonBase';
+import { useAuth } from '../utils/context/authContext';
 import { signOut } from '../utils/auth';
 
 export default function NavBar() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { user } = useAuth();
+
+  const toggleDrawer = (open) => () => {
+    setDrawerOpen(open);
+  };
+
+  const DrawerList = (
+    <div
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+      style={{ width: 250, backgroundColor: '#424242', color: 'white' }}
+    >
+      <List>
+        {['Home', 'Menu Items'].map((text) => (
+          <Link href={text === 'Home' ? '/' : '/menuItems'} passHref key={text}>
+            <ButtonBase component="a" style={{ width: '100%' }}>
+              <ListItem>
+                <ListItemText primary={text} />
+              </ListItem>
+            </ButtonBase>
+          </Link>
+        ))}
+      </List>
+      <Divider />
+      <List>
+        <ListItem>
+          <ButtonBase onClick={signOut} style={{ width: '100%' }}>
+            <ListItemText primary="Sign Out" />
+          </ButtonBase>
+        </ListItem>
+      </List>
+    </div>
+  );
+
   return (
-    <Navbar collapseOnSelect expand="lg" bg="dark" variant="dark">
-      <Container>
-        <Link passHref href="/">
-          <Navbar.Brand>CHANGE ME</Navbar.Brand>
-        </Link>
-        <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-        <Navbar.Collapse id="responsive-navbar-nav">
-          <Nav className="me-auto">
-            {/* CLOSE NAVBAR ON LINK SELECTION: https://stackoverflow.com/questions/72813635/collapse-on-select-react-bootstrap-navbar-with-nextjs-not-working */}
-            <Link passHref href="/">
-              <Nav.Link>Home</Nav.Link>
-            </Link>
-            <Link passHref href="/delete-me">
-              <Nav.Link>Delete Me</Nav.Link>
-            </Link>
-            <Button variant="danger" onClick={signOut}>
-              Sign Out
-            </Button>
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+    <>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={toggleDrawer(true)}
+            edge="start"
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            App Name
+          </Typography>
+          {user && user.fbUser && (
+            <Avatar alt="Profile" src={user.fbUser.photoURL} />
+          )}
+        </Toolbar>
+      </AppBar>
+      <Drawer
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+        PaperProps={{
+          sx: { backgroundColor: '#424242', color: 'white' },
+        }}
+      >
+        {DrawerList}
+      </Drawer>
+    </>
   );
 }

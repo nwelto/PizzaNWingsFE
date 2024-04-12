@@ -1,28 +1,55 @@
 import React from 'react';
-import { Button } from 'react-bootstrap';
+import { styled } from '@mui/material/styles';
+import ButtonBase from '@mui/material/ButtonBase';
+import Box from '@mui/material/Box';
+import { useRouter } from 'next/router';
 import { signIn } from '../utils/auth';
 
+const FullPageBackground = styled('div')({
+  backgroundImage: 'url(\'pizzanw2.jpg\')',
+  backgroundPosition: 'center',
+  backgroundSize: 'cover',
+  backgroundRepeat: 'no-repeat',
+  width: '100vw',
+  height: '100vh',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+});
+
+const SignInButton = styled(ButtonBase)(({ theme }) => ({
+  fontSize: '2.5rem',
+  fontWeight: 'bold',
+  padding: theme.spacing(2),
+  borderRadius: theme.shape.borderRadius,
+  color: theme.palette.common.white,
+  backgroundColor: 'transparent',
+  border: '20px solid transparent',
+  transition: theme.transitions.create(['border-color', 'transform']),
+  '&:hover': {
+    backgroundColor: 'transparent',
+    borderColor: theme.palette.common.white,
+    transform: 'scale(1.02)',
+  },
+  marginTop: theme.spacing(50),
+}));
+
 function Signin() {
+  const router = useRouter();
+
+  const handleSignIn = () => {
+    signIn();
+    router.push('/');
+  };
+
   return (
-    <div
-      className="text-center d-flex flex-column justify-content-center align-content-center"
-      style={{
-        height: '90vh',
-        padding: '30px',
-        margin: '0 auto',
-        zIndex: 1,
-        minHeight: '25rem',
-        width: '100%',
-        minWidth: '30rem',
-        paddingBlock: '0 5rem',
-      }}
-    >
-      <h1>Hi there!</h1>
-      <p>Click the button below to login!</p>
-      <Button type="button" size="lg" className="copy-btn" onClick={signIn}>
-        Sign In
-      </Button>
-    </div>
+    <FullPageBackground>
+      <Box sx={{ textAlign: 'center', width: '100%' }}>
+        <SignInButton onClick={handleSignIn}>
+          Sign In
+        </SignInButton>
+      </Box>
+    </FullPageBackground>
   );
 }
 
