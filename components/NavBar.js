@@ -31,15 +31,19 @@ export default function NavBar() {
       style={{ width: 250, backgroundColor: '#424242', color: 'white' }}
     >
       <List>
-        {['Home', 'Menu Items'].map((text) => (
-          <Link href={text === 'Home' ? '/' : '/menuItems'} passHref key={text}>
-            <ButtonBase component="a" style={{ width: '100%' }}>
-              <ListItem>
-                <ListItemText primary={text} />
-              </ListItem>
-            </ButtonBase>
-          </Link>
-        ))}
+        {['Home', 'Menu Items', 'Orders', 'Revenue'].map((text) => {
+          // eslint-disable-next-line no-nested-ternary
+          const href = text === 'Home' ? '/' : text === 'Menu Items' ? '/menuItems' : text === 'Orders' ? '/orders' : '/revenue';
+          return (
+            <Link href={href} passHref key={text}>
+              <ButtonBase component="a" style={{ width: '100%' }}>
+                <ListItem>
+                  <ListItemText primary={text} />
+                </ListItem>
+              </ButtonBase>
+            </Link>
+          );
+        })}
       </List>
       <Divider />
       <List>
