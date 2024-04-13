@@ -69,7 +69,7 @@ export default function NavBar() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            App Name
+            <img src="/pnw.png" alt="App Logo" style={{ height: '80px', marginRight: '10px' }} />
           </Typography>
           {user && user.fbUser && (
             <Avatar alt="Profile" src={user.fbUser.photoURL} />
