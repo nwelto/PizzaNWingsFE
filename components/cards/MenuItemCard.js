@@ -8,7 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { deleteMenuItem } from '../../API/MenuItemData';
 
-function MenuItemCard({ menuItem, onUpdate }) {
+function MenuItemCard({ menuItem, onUpdate, onEdit }) {
   const handleDelete = () => {
     if (window.confirm(`Delete ${menuItem.name}?`)) {
       deleteMenuItem(menuItem.id).then(() => onUpdate());
@@ -26,18 +26,17 @@ function MenuItemCard({ menuItem, onUpdate }) {
             {menuItem.name}
           </Typography>
           <Typography color="textSecondary" gutterBottom style={{ marginBottom: '10px', color: 'white' }}>
-            Price: ${menuItem.price}
+            Price: ${menuItem.price.toFixed(2)}
           </Typography>
         </div>
         <Typography color="textSecondary" gutterBottom style={{ marginTop: '10px', color: 'white' }}>
           Available: {menuItem.available ? 'Yes' : 'No'}
         </Typography>
-
         <div>
           <Typography variant="body2" component="p" style={{ marginTop: 'auto', color: 'white' }}>
             Description: {menuItem.description}
           </Typography>
-          <IconButton aria-label="edit" color="primary" onClick={() => ('Edit clicked')}>
+          <IconButton aria-label="edit" color="primary" onClick={() => onEdit(menuItem)}>
             <EditIcon />
           </IconButton>
           <IconButton aria-label="delete" color="error" onClick={handleDelete}>
@@ -58,6 +57,7 @@ MenuItemCard.propTypes = {
     available: PropTypes.bool.isRequired,
   }).isRequired,
   onUpdate: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
 };
 
 export default MenuItemCard;
