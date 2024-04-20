@@ -10,7 +10,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import { deleteOrder } from '../../API/orderData';
 
-function OrderCard({ order, onUpdate = () => {} }) {
+function OrderCard({ order, onUpdate }) {
   const router = useRouter();
 
   const handleDelete = async () => {
@@ -74,8 +74,11 @@ OrderCard.propTypes = {
     ).isRequired,
     orderStatus: PropTypes.number.isRequired,
   }).isRequired,
-  // eslint-disable-next-line react/require-default-props
   onUpdate: PropTypes.func,
+};
+
+OrderCard.defaultProps = {
+  onUpdate: () => {},
 };
 
 export default OrderCard;

@@ -59,9 +59,17 @@ const updateOrder = (id, payload) => new Promise((resolve, reject) => {
     },
     body: JSON.stringify(payload),
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Failed to update order');
+      }
+      return response.json();
+    })
     .then((data) => resolve(data))
-    .catch(reject);
+    .catch((error) => {
+      console.error('Error updating order:', error);
+      reject(error);
+    });
 });
 
 const deleteOrder = (id) => new Promise((resolve, reject) => {

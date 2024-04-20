@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import { signIn } from '../utils/auth';
 
 const FullPageBackground = styled('div')({
-  backgroundImage: 'url(\'pizzanw2.jpg\')',
+  backgroundImage: 'url(\'pwn7.jpg\')',
   backgroundPosition: 'center',
   backgroundSize: 'cover',
   backgroundRepeat: 'no-repeat',
@@ -18,20 +18,20 @@ const FullPageBackground = styled('div')({
 });
 
 const SignInButton = styled(ButtonBase)(({ theme }) => ({
-  fontSize: '2.5rem',
+  fontSize: '2rem',
   fontWeight: 'bold',
   padding: theme.spacing(2),
   borderRadius: theme.shape.borderRadius,
   color: theme.palette.common.white,
   backgroundColor: 'transparent',
-  border: '20px solid transparent',
+  border: '10px solid transparent',
   transition: theme.transitions.create(['border-color', 'transform']),
   '&:hover': {
     backgroundColor: 'transparent',
     borderColor: theme.palette.common.white,
     transform: 'scale(1.02)',
   },
-  marginTop: theme.spacing(50),
+  marginTop: theme.spacing(10),
 }));
 
 function Signin() {

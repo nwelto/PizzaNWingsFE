@@ -14,29 +14,31 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material';
-import { useRouter } from 'next/router';
-import { updateOrder, createOrder } from '../../API/orderData';
+import { useRouter } from 'next/router'; // Import useRouter
+import { updateOrder, createOrder } from '../../API/orderData'; // Import updateOrder and createOrder
 import { getMenuItems } from '../../API/MenuItemData';
 
-const OrderForm = ({ order, onSave, isNew = false }) => {
-  const router = useRouter();
+function OrderForm({ order, onSave, isNew = false }) {
+  const router = useRouter(); // Initialize useRouter
   const [formData, setFormData] = useState({
     customerPhone: order?.customerPhone || '',
     customerEmail: order?.customerEmail || '',
     orderType: order?.orderType || '',
-    orderStatus: isNew ? '0' : order?.orderStatus.toString(),
-    orderItems: order?.orderItems || [],
+    orderStatus: isNew ? 0 : order?.orderStatus || 0,
+    orderItems: [],
   });
   const [menuItems, setMenuItems] = useState([]);
   const [selectedMenuItem, setSelectedMenuItem] = useState('');
 
   useEffect(() => {
     let isMounted = true;
-    getMenuItems().then((data) => {
-      if (isMounted) {
-        setMenuItems(data);
-      }
-    }).catch(console.error);
+    getMenuItems()
+      .then((data) => {
+        if (isMounted) {
+          setMenuItems(data);
+        }
+      })
+      .catch(console.error);
 
     return () => { isMounted = false; };
   }, []);
@@ -69,28 +71,31 @@ const OrderForm = ({ order, onSave, isNew = false }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     const submissionData = {
-      ...formData,
-      orderStatus: parseInt(formData.orderStatus, 10),
+      customerPhone: formData.customerPhone,
+      customerEmail: formData.customerEmail,
+      orderType: formData.orderType,
+      orderStatusString: formData.orderStatus.toString(), // Convert orderStatus to string if necessary
       orderItems: formData.orderItems.map((item) => ({
         menuItemId: item.menuItemId,
         quantity: item.quantity,
-      })),
+      })), // Make sure this contains the necessary data structure
     };
-    console.log('Submission Data:', submissionData);
 
-    const action = isNew ? createOrder : updateOrder;
-    const orderId = router.query.id;
-    await action(submissionData, orderId)
+    const orderId = order.id; // Get the order ID from the current order
+    const action = isNew ? createOrder : updateOrder; // Determine the action based on isNew
+    await action(orderId, submissionData) // Call the appropriate action
       .then((response) => {
         onSave(response);
-        router.back();
+        router.back(); // Navigate back after saving
       })
       .catch((error) => {
         console.error('API Error:', error);
         alert(`API Error: ${error.message}`);
       });
   };
+
   return (
     <Paper sx={{ p: 2, backgroundColor: 'white', color: 'black' }}>
       <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
@@ -132,9 +137,9 @@ const OrderForm = ({ order, onSave, isNew = false }) => {
               label="Order Status"
               onChange={handleChange}
             >
-              <MUIMenuItem value="0">Open</MUIMenuItem>
-              <MUIMenuItem value="1">Paid</MUIMenuItem>
-              <MUIMenuItem value="2">Closed</MUIMenuItem>
+              <MUIMenuItem value={0}>Open</MUIMenuItem>
+              <MUIMenuItem value={1}>Paid</MUIMenuItem>
+              <MUIMenuItem value={2}>Closed</MUIMenuItem>
             </Select>
           </FormControl>
         )}
@@ -157,11 +162,11 @@ const OrderForm = ({ order, onSave, isNew = false }) => {
           Add Item to Order
         </Button>
         <List>
-          {formData.orderItems.map((item, index) => (
-            // eslint-disable-next-line react/no-array-index-key
-            <ListItem key={`${item.menuItemId}-${index}`}>
+          {formData.orderItems.map((item) => (
+            <ListItem key={`${item.menuItemId}-${item.name}`}>
               <ListItemText
-                primary={`${item.name} x ${item.quantity}`}
+                primary={`${item.name}`}
+                secondary={`Quantity: ${item.quantity}`}
               />
             </ListItem>
           ))}
@@ -177,14 +182,15 @@ const OrderForm = ({ order, onSave, isNew = false }) => {
       </Box>
     </Paper>
   );
-};
+}
 
 OrderForm.propTypes = {
   order: PropTypes.shape({
+    id: PropTypes.number,
     customerPhone: PropTypes.string,
     customerEmail: PropTypes.string,
     orderType: PropTypes.string,
-    orderStatus: PropTypes.string,
+    orderStatus: PropTypes.number,
     orderItems: PropTypes.arrayOf(PropTypes.shape({
       menuItemId: PropTypes.number,
       name: PropTypes.string,
