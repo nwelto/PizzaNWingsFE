@@ -1,46 +1,58 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useRouter } from 'next/router';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { deleteMenuItem } from '../../API/MenuItemData';
+import InfoIcon from '@mui/icons-material/Info';
+import { deleteOrder } from '../../API/orderData';
 
-function MenuItemCard({ menuItem, onUpdate, onEdit }) {
-  const handleDelete = () => {
-    if (window.confirm(`Delete ${menuItem.name}?`)) {
-      deleteMenuItem(menuItem.id).then(() => onUpdate());
+function OrderCard({ order, onUpdate = () => {} }) {
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete Order #${order.id}?`)) {
+      try {
+        await deleteOrder(order.id);
+        onUpdate();
+      } catch (error) {
+        console.error('Failed to delete order', error);
+        alert('Failed to delete the order.');
+      }
     }
   };
 
+  const calculateTotal = () => order.orderItems.reduce((total, item) => Number(item.menuItem?.price || 0) + total, 0);
+
   return (
     <Card variant="outlined" style={{ backgroundColor: '#333333', color: 'white', marginBottom: '20px' }}>
-      <CardContent style={{
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%',
-      }}
-      >
-        <div>
-          <Typography variant="h5" component="h2">
-            {menuItem.name}
-          </Typography>
-          <Typography color="textSecondary" gutterBottom style={{ marginBottom: '10px', color: 'white' }}>
-            Price: ${menuItem.price.toFixed(2)}
-          </Typography>
-        </div>
-        <Typography color="textSecondary" gutterBottom style={{ marginTop: '10px', color: 'white' }}>
-          Available: {menuItem.available ? 'Yes' : 'No'}
+      <CardContent>
+        <Typography variant="h5" component="div">
+          Order #{order.id}
         </Typography>
-        <div>
-          <Typography variant="body2" component="p" style={{ marginTop: 'auto', color: 'white' }}>
-            Description: {menuItem.description}
+        {order.orderItems.map((item) => (
+          <Typography key={item.menuItem.id} variant="body2" component="p">
+            {item.menuItem?.name} - Price: ${Number(item.menuItem?.price || 0).toFixed(2)}
           </Typography>
-          <IconButton aria-label="edit" color="primary" onClick={() => onEdit(menuItem)}>
+        ))}
+        <Typography variant="h6" component="div" style={{ marginTop: '10px' }}>
+          Total: ${calculateTotal().toFixed(2)}
+        </Typography>
+        <Typography variant="subtitle1" style={{ marginTop: '10px' }}>
+          Status: {['Open', 'Paid', 'Closed'][order.orderStatus]}
+        </Typography>
+        <div style={{ marginTop: '20px' }}>
+          <IconButton aria-label="edit" color="primary" onClick={() => router.push(`/orders/edit/${order.id}`)}>
             <EditIcon />
           </IconButton>
           <IconButton aria-label="delete" color="error" onClick={handleDelete}>
             <DeleteIcon />
+          </IconButton>
+          <IconButton aria-label="more details" color="primary" onClick={() => router.push(`/orders/${order.id}`)}>
+            <InfoIcon />
           </IconButton>
         </div>
       </CardContent>
@@ -48,16 +60,22 @@ function MenuItemCard({ menuItem, onUpdate, onEdit }) {
   );
 }
 
-MenuItemCard.propTypes = {
-  menuItem: PropTypes.shape({
+OrderCard.propTypes = {
+  order: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    price: PropTypes.number.isRequired,
-    description: PropTypes.string.isRequired,
-    available: PropTypes.bool.isRequired,
+    orderItems: PropTypes.arrayOf(
+      PropTypes.shape({
+        menuItem: PropTypes.shape({
+          id: PropTypes.number.isRequired,
+          name: PropTypes.string,
+          price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        }),
+      }),
+    ).isRequired,
+    orderStatus: PropTypes.number.isRequired,
   }).isRequired,
-  onUpdate: PropTypes.func.isRequired,
-  onEdit: PropTypes.func.isRequired,
+  // eslint-disable-next-line react/require-default-props
+  onUpdate: PropTypes.func,
 };
 
-export default MenuItemCard;
+export default OrderCard;
