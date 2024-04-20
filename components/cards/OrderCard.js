@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useRouter } from 'next/router';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -9,23 +10,22 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import { deleteOrder } from '../../API/orderData';
 
-const OrderStatusReadable = {
-  0: 'Open',
-  1: 'Paid',
-  2: 'Closed',
-};
+function OrderCard({ order, onUpdate = () => {} }) {
+  const router = useRouter();
 
-function OrderCard({ order, onUpdate }) {
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm(`Are you sure you want to delete Order #${order.id}?`)) {
-      deleteOrder(order.id).then(onUpdate);
+      try {
+        await deleteOrder(order.id);
+        onUpdate();
+      } catch (error) {
+        console.error('Failed to delete order', error);
+        alert('Failed to delete the order.');
+      }
     }
   };
 
-  const calculateTotal = () => order.orderItems.reduce((total, item) => {
-    const price = Number(item.menuItem?.price || 0);
-    return total + price;
-  }, 0);
+  const calculateTotal = () => order.orderItems.reduce((total, item) => Number(item.menuItem?.price || 0) + total, 0);
 
   return (
     <Card variant="outlined" style={{ backgroundColor: '#333333', color: 'white', marginBottom: '20px' }}>
@@ -42,16 +42,16 @@ function OrderCard({ order, onUpdate }) {
           Total: ${calculateTotal().toFixed(2)}
         </Typography>
         <Typography variant="subtitle1" style={{ marginTop: '10px' }}>
-          Status: {OrderStatusReadable[order.orderStatus]}
+          Status: {['Open', 'Paid', 'Closed'][order.orderStatus]}
         </Typography>
         <div style={{ marginTop: '20px' }}>
-          <IconButton aria-label="edit" color="primary">
+          <IconButton aria-label="edit" color="primary" onClick={() => router.push(`/orders/edit/${order.id}`)}>
             <EditIcon />
           </IconButton>
           <IconButton aria-label="delete" color="error" onClick={handleDelete}>
             <DeleteIcon />
           </IconButton>
-          <IconButton aria-label="more details" color="primary">
+          <IconButton aria-label="more details" color="primary" onClick={() => router.push(`/orders/${order.id}`)}>
             <InfoIcon />
           </IconButton>
         </div>
@@ -63,18 +63,19 @@ function OrderCard({ order, onUpdate }) {
 OrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    orderItems: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.number,
-      menuItem: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        name: PropTypes.string,
-        price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    orderItems: PropTypes.arrayOf(
+      PropTypes.shape({
+        menuItem: PropTypes.shape({
+          id: PropTypes.number.isRequired,
+          name: PropTypes.string,
+          price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        }),
       }),
-      quantity: PropTypes.number,
-    })).isRequired,
+    ).isRequired,
     orderStatus: PropTypes.number.isRequired,
   }).isRequired,
-  onUpdate: PropTypes.func.isRequired,
+  // eslint-disable-next-line react/require-default-props
+  onUpdate: PropTypes.func,
 };
 
 export default OrderCard;

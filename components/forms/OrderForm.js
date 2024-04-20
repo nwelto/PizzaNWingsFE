@@ -1,176 +1,204 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Box, TextField, Button, Typography, Modal, Select, MenuItem, InputLabel, FormControl,
-  IconButton, List, ListItem,
+  Box,
+  Button,
+  TextField,
+  Typography,
+  MenuItem as MUIMenuItem,
+  FormControl,
+  Select,
+  InputLabel,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { useSnackbar } from 'notistack';
-import { createOrder } from '../../API/orderData';
+import { useRouter } from 'next/router';
+import { updateOrder, createOrder } from '../../API/orderData';
 import { getMenuItems } from '../../API/MenuItemData';
 
-function OrderForm({ onClose, refreshOrders }) {
+const OrderForm = ({ order, onSave, isNew = false }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    customerPhone: '',
-    customerEmail: '',
-    orderType: '',
-    orderItems: [],
+    customerPhone: order?.customerPhone || '',
+    customerEmail: order?.customerEmail || '',
+    orderType: order?.orderType || '',
+    orderStatus: isNew ? '0' : order?.orderStatus.toString(),
+    orderItems: order?.orderItems || [],
   });
   const [menuItems, setMenuItems] = useState([]);
-  const { enqueueSnackbar } = useSnackbar();
+  const [selectedMenuItem, setSelectedMenuItem] = useState('');
 
   useEffect(() => {
-    getMenuItems().then(setMenuItems);
+    let isMounted = true;
+    getMenuItems().then((data) => {
+      if (isMounted) {
+        setMenuItems(data);
+      }
+    }).catch(console.error);
+
+    return () => { isMounted = false; };
   }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleItemChange = (uniqueId, field, value) => {
-    const newOrderItems = formData.orderItems.map((item) => (item.uniqueId === uniqueId ? { ...item, [field]: value } : item));
-    setFormData({ ...formData, orderItems: newOrderItems });
+  const handleMenuItemChange = (event) => {
+    setSelectedMenuItem(event.target.value);
   };
 
-  const addItem = () => {
-    setFormData((prevState) => ({
-      ...prevState,
-      orderItems: [...prevState.orderItems, {
-        menuItemId: menuItems[0]?.id || '',
+  const addMenuItemToOrder = () => {
+    const itemToAdd = menuItems.find((item) => item.id === parseInt(selectedMenuItem, 10));
+    if (itemToAdd) {
+      const newItem = {
+        menuItemId: itemToAdd.id,
+        name: itemToAdd.name,
+        price: itemToAdd.price,
         quantity: 1,
-        uniqueId: Date.now() + Math.random(),
-      }],
-    }));
-  };
-
-  const removeItem = (uniqueId) => {
-    const newOrderItems = formData.orderItems.filter((item) => item.uniqueId !== uniqueId);
-    setFormData({ ...formData, orderItems: newOrderItems });
+      };
+      setFormData((prev) => ({
+        ...prev,
+        orderItems: [...prev.orderItems, newItem],
+      }));
+      setSelectedMenuItem('');
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    try {
-      await createOrder(formData);
-      enqueueSnackbar('Order created successfully!', { variant: 'success' });
-      refreshOrders();
-      onClose();
-    } catch (error) {
-      enqueueSnackbar('Failed to create order.', { variant: 'error' });
-      console.error('Order submission error:', error);
-    }
-  };
+    const submissionData = {
+      ...formData,
+      orderStatus: parseInt(formData.orderStatus, 10),
+      orderItems: formData.orderItems.map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+      })),
+    };
+    console.log('Submission Data:', submissionData);
 
+    const action = isNew ? createOrder : updateOrder;
+    const orderId = router.query.id;
+    await action(submissionData, orderId)
+      .then((response) => {
+        onSave(response);
+        router.back();
+      })
+      .catch((error) => {
+        console.error('API Error:', error);
+        alert(`API Error: ${error.message}`);
+      });
+  };
   return (
-    <Modal open onClose={onClose}>
-      <Box sx={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 400,
-        bgcolor: '#333',
-        color: 'white',
-        boxShadow: 24,
-        p: 4,
-        '& .MuiTextField-root': { margin: '8px 0' },
-        '& .MuiSelect-root': { color: 'white' },
-        '& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-        '& .MuiInputLabel-root': { color: 'white' },
-      }}
-      >
-        <Typography variant="h6" component="h2">
-          Create New Order
-        </Typography>
-        <Box
-          component="form"
-          noValidate
-          autoComplete="off"
-          onSubmit={handleSubmit}
-          sx={{ mt: 2 }}
-        >
-          <TextField
-            fullWidth
-            label="Customer Phone"
-            variant="outlined"
-            name="customerPhone"
-            value={formData.customerPhone}
+    <Paper sx={{ p: 2, backgroundColor: 'white', color: 'black' }}>
+      <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
+        <Typography variant="h6">{isNew ? 'Create New Order' : 'Edit Order Details'}</Typography>
+        <TextField
+          margin="normal"
+          fullWidth
+          label="Customer Phone"
+          name="customerPhone"
+          value={formData.customerPhone}
+          onChange={handleChange}
+        />
+        <TextField
+          margin="normal"
+          fullWidth
+          label="Customer Email"
+          name="customerEmail"
+          value={formData.customerEmail}
+          onChange={handleChange}
+        />
+        <FormControl fullWidth margin="normal">
+          <InputLabel>Order Type</InputLabel>
+          <Select
+            name="orderType"
+            value={formData.orderType}
+            label="Order Type"
             onChange={handleChange}
-            required
-          />
-          <TextField
-            fullWidth
-            label="Customer Email"
-            variant="outlined"
-            name="customerEmail"
-            value={formData.customerEmail}
-            onChange={handleChange}
-            required
-          />
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel id="order-type-label">Order Type</InputLabel>
+          >
+            <MUIMenuItem value="Takeout">Takeout</MUIMenuItem>
+            <MUIMenuItem value="Delivery">Delivery</MUIMenuItem>
+          </Select>
+        </FormControl>
+        {!isNew && (
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Order Status</InputLabel>
             <Select
-              labelId="order-type-label"
-              label="Order Type"
-              name="orderType"
-              value={formData.orderType}
+              name="orderStatus"
+              value={formData.orderStatus}
+              label="Order Status"
               onChange={handleChange}
-              required
             >
-              <MenuItem value="Takeout">Takeout</MenuItem>
-              <MenuItem value="Delivery">Delivery</MenuItem>
+              <MUIMenuItem value="0">Open</MUIMenuItem>
+              <MUIMenuItem value="1">Paid</MUIMenuItem>
+              <MUIMenuItem value="2">Closed</MUIMenuItem>
             </Select>
           </FormControl>
-          <Typography variant="h6" component="h2" sx={{ mt: 2 }}>
-            Order Items
-          </Typography>
-          <List>
-            {formData.orderItems.map((item) => (
-              <ListItem
-                key={item.uniqueId}
-                sx={{
-                  pl: 0, pr: 0, bgcolor: '#444', mb: 1,
-                }}
-              >
-                <FormControl fullWidth>
-                  <Select
-                    value={item.menuItemId}
-                    onChange={(e) => handleItemChange(item.uniqueId, 'menuItemId', e.target.value)}
-                    displayEmpty
-                  >
-                    {menuItems.map((menuItem) => (
-                      <MenuItem key={menuItem.id} value={menuItem.id}>
-                        {menuItem.name} - ${menuItem.price.toFixed(2)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <IconButton edge="end" aria-label="delete" onClick={() => removeItem(item.uniqueId)}>
-                  <RemoveCircleOutlineIcon />
-                </IconButton>
-              </ListItem>
+        )}
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="menu-item-select-label">Menu Item</InputLabel>
+          <Select
+            labelId="menu-item-select-label"
+            value={selectedMenuItem}
+            label="Menu Item"
+            onChange={handleMenuItemChange}
+          >
+            {menuItems.map((item) => (
+              <MUIMenuItem key={item.id} value={item.id}>
+                {item.name} - ${item.price.toFixed(2)}
+              </MUIMenuItem>
             ))}
-          </List>
-          <Button startIcon={<AddCircleOutlineIcon />} onClick={addItem} sx={{ mb: 2 }}>
-            Add Item
-          </Button>
-          <Button type="submit" color="primary" variant="contained" sx={{ mt: 3, mb: 2 }}>
-            Create Order
-          </Button>
-        </Box>
+          </Select>
+        </FormControl>
+        <Button onClick={addMenuItemToOrder} variant="contained" sx={{ mt: 1, mb: 2 }}>
+          Add Item to Order
+        </Button>
+        <List>
+          {formData.orderItems.map((item, index) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <ListItem key={`${item.menuItemId}-${index}`}>
+              <ListItemText
+                primary={`${item.name} x ${item.quantity}`}
+              />
+            </ListItem>
+          ))}
+        </List>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2 }}
+        >
+          {isNew ? 'Create Order' : 'Save Changes'}
+        </Button>
       </Box>
-    </Modal>
+    </Paper>
   );
-}
+};
 
 OrderForm.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  refreshOrders: PropTypes.func.isRequired,
+  order: PropTypes.shape({
+    customerPhone: PropTypes.string,
+    customerEmail: PropTypes.string,
+    orderType: PropTypes.string,
+    orderStatus: PropTypes.string,
+    orderItems: PropTypes.arrayOf(PropTypes.shape({
+      menuItemId: PropTypes.number,
+      name: PropTypes.string,
+      price: PropTypes.number,
+      quantity: PropTypes.number,
+    })),
+  }),
+  onSave: PropTypes.func.isRequired,
+  isNew: PropTypes.bool,
+};
+
+OrderForm.defaultProps = {
+  order: {},
+  isNew: false,
 };
 
 export default OrderForm;

@@ -37,8 +37,28 @@ const deleteOrderItem = (id) => new Promise((resolve, reject) => {
     })
     .catch(reject);
 });
-
+const getOrderItems = (orderId) => new Promise((resolve, reject) => {
+  fetch(`${endpoint}/orderItems/order/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        resolve(data);
+      } else {
+        reject(new Error(`No order items found for Order ID ${orderId}.`));
+      }
+    })
+    .catch((error) => {
+      console.error('Failed to fetch order items:', error);
+      reject(new Error('Error fetching order items.'));
+    });
+});
 export {
   createOrderItem,
   deleteOrderItem,
+  getOrderItems,
 };
